@@ -1,15 +1,68 @@
 #include <stdlib.h>
 #include "event.h"
+#include "util.h"
 
+igEvent* igInitEvent(igEvent *next, unsigned axis, float plane, Type t, unsigned trid) {
+	igEvent* e = malloc(sizeof(igEvent));
+	e->next = next;
+	e->axis = axis;
+	e->plane = plane;
+	e->type = t;
+	e->trid = trid;
+	return e;
+}
 
+void igCreateEvent(AABB *aabb, igEvents *es, unsigned trid) {
+	unsigned axis;
+	for(axis = 0; axis < 3; axis++) {
+		float start = (*aabb)[axis];
+		float end = (*aabb)[axis + 3];
+		if(start == end) {
+			(*es)[axis] = (*es)[axis]->next = igInitEvent(NULL, axis, start, IGPLANAR, trid);
+		} else {
+			igEvent *e1 = igInitEvent(NULL, axis, start, IGBEGIN, trid);
+			igEvent *e2 = igInitEvent(e1, axis, end, IGEND, trid);
+			(*es)[axis]->next = e2;
+			(*es)[axis] = e1;
+		}
+	}
+}
+
+igEvents* igCreateEvents(Triangle *t, unsigned tcnt) {
+	unsigned axis;
+	igEvents *es = malloc(sizeof(igEvents));
+	for(axis = 0; axis < 3; axis++) {
+		(*es)[axis] = malloc(sizeof(igEvent));
+		(*es)[axis]->next = NULL;
+	}
+	unsigned i;
+	for(i = 0; i < tcnt; i++) {
+		AABB aabb;
+		for(axis = 0; axis < 3; axis++) {
+			float start = minv(3, t[tcnt][axis], t[tcnt][axis+3], t[tcnt][axis+6]);
+			float end = maxv(3, t[tcnt][axis], t[tcnt][axis+3], t[tcnt][axis+6]);
+			aabb[axis] = start;
+			aabb[axis + 3] = end;
+		}
+		igCreateEvent(&aabb, es, i);
+	}
+	for(axis = 0; axis < 3; axis++) {
+		igEvent *tmp;
+		tmp = (*es)[axis];
+		(*es)[axis] = (*es)[axis]->next;
+		free(tmp);
+	}
+	igSortEvents(es);
+	return es;
+}
 
 void igSortEvents(igEvents *es) {
 	unsigned axis;
 	for(axis = 0; axis < 3; axis++) {
-		const unsigned ecnt = igCountEvents(*es[axis]);
+		const unsigned ecnt = igCountEvents((*es)[axis]);
 		if(!ecnt) continue;
 		igEvent **orderBy = malloc(ecnt * sizeof(igEvent*));
-		igEvent *eit = *es[axis];
+		igEvent *eit = (*es)[axis];
 		unsigned i;
 		for(i = 0; eit; i++, eit = eit->next)
 				orderBy[i] = eit;
@@ -17,7 +70,7 @@ void igSortEvents(igEvents *es) {
 		for(i = 0; i < ecnt - 1; i++)
 			orderBy[i]->next = orderBy[i + 1];
 		orderBy[ecnt - 1]->next = NULL;
-		*es[axis] = orderBy[0];
+		(*es)[axis] = orderBy[0];
 		free(orderBy);
 	}
 }
@@ -47,6 +100,49 @@ igEvents* igMergeEvents(igEvents *e1, igEvents *e2) {
 	}
 	igEventsFree(e2);
 	return e1;
+}
+
+unsigned igCountTriangles(igEvents *es) {
+	unsigned cnt;
+	igEvent *eit;
+	for(cnt = 0, eit = (*es)[0]; eit; eit = eit->next)
+			if(eit->type == IGBEGIN || eit->type == IGPLANAR) cnt++;
+	return cnt;
+}
+
+unsigned igCountEvents(igEvent *e) {
+	unsigned cnt;
+	for(cnt = 0; e; e = e->next, cnt++);
+	return cnt;
+}
+
+int igEventCmp(const void *ve1, const void *ve2) {
+	const igEvent *e1 = *((const igEvent**)ve1);
+	const igEvent *e2 = *((const igEvent**)ve2);
+	if(e1->plane < e2->plane) return -1;
+	if(e1->plane > e2->plane) return 1;
+	if(e1->type == IGEND && e1->type != e2->type) return 1;
+	if(e1->type == IGPLANAR && e1->type != e2->type) return 1;
+	return 0;
+}
+
+void igEventsFree(igEvents *es) {
+	unsigned axis;
+	for(axis = 0; axis < 3; axis++) {
+		igEvent *eit = (*es)[axis];
+		while(eit) {
+			igEvent *prev = eit;
+			eit = eit->next;
+			free(prev);
+		}
+	}
+	free(es);
+}
+
+igEvents* igInitEvents() {
+	igEvents *es;
+	(*es)[0] = (*es)[1] = (*es)[2] = NULL;
+	return es;
 }
 
 

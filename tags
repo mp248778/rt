@@ -1,0 +1,47 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.7	//
+AABB	include/aabb.h	/^typedef float AABB[6];$/;"	t
+AABB_HEADER	include/aabb.h	2;"	d
+EVENT_HEADER	include/event.h	2;"	d
+IGBEGIN	include/event.h	/^	IGBEGIN,$/;"	e	enum:__anon3
+IGBOTH	include/IngoKdTreeInternal.h	/^	IGBOTH,$/;"	e	enum:__anon1
+IGEND	include/event.h	/^	IGEND,$/;"	e	enum:__anon3
+IGLEFT_ONLY	include/IngoKdTreeInternal.h	/^	IGLEFT_ONLY,$/;"	e	enum:__anon1
+IGPLANAR	include/event.h	/^	IGPLANAR$/;"	e	enum:__anon3
+IGRIGHT_ONLY	include/IngoKdTreeInternal.h	/^	IGRIGHT_ONLY$/;"	e	enum:__anon1
+INGOKDTREEINTERNAL_HEADER	include/IngoKdTreeInternal.h	2;"	d
+INGO_KDTREE_HEADER	include/IngoKdTree.h	2;"	d
+KDTREE_BUILD_H	include/build.h	2;"	d
+SAHSPLITCANDIDATE_HEADER	include/sahsplitcandidate.h	2;"	d
+SAHSplitCandidate	include/sahsplitcandidate.h	/^} SAHSplitCandidate;$/;"	t	typeref:struct:__anon2
+SAH_HEADER	include/sah.h	2;"	d
+TRIANGLE_HEADER	include/triangle.h	2;"	d
+Triangle	include/triangle.h	/^typedef float Triangle[9];$/;"	t
+Type	include/event.h	/^} Type;$/;"	t	typeref:enum:__anon3
+axis	include/event.h	/^	unsigned axis;$/;"	m	struct:igEvent
+axis	include/sahsplitcandidate.h	/^	unsigned axis;$/;"	m	struct:__anon2
+child	include/IngoKdTree.h	/^	struct igKdTree *child; \/\/aligned to 8 byte, so we have some room in here for axis and leaf flag$/;"	m	struct:igKdTree	typeref:struct:igKdTree::igKdTree
+igBuild	IngoKdTree.c	/^igKdTree* igBuild(Triangle *t, const unsigned tcnt) {$/;"	f
+igClassifyTriangles	IngoKdTree.c	/^void igClassifyTriangles(Triangle *t, igTriangleData *igdt, igEvents *es, SAHSplitCandidate *split) {$/;"	f
+igCreateTree	IngoKdTree.c	/^igKdTree* igCreateTree(Triangle *t, igTriangleData *igdt, AABB *aabb, igEvents *es) {$/;"	f
+igEvent	include/event.h	/^typedef struct igEvent {$/;"	s
+igEvent	include/event.h	/^} igEvent;$/;"	t	typeref:struct:igEvent
+igEvents	include/event.h	/^typedef igEvent* igEvents[3];$/;"	t
+igFindSAHSplitCandidate	IngoKdTree.c	/^SAHSplitCandidate* igFindSAHSplitCandidate(Triangle *t, AABB *aabb, igEvents *es) {$/;"	f
+igKdTree	include/IngoKdTree.h	/^typedef struct igKdTree {$/;"	s
+igKdTree	include/IngoKdTree.h	/^} igKdTree;$/;"	t	typeref:struct:igKdTree
+igMergeEvents	event.c	/^igEvents* igMergeEvents(igEvents *e1, igEvents *e2) {$/;"	f
+igSortEvents	event.c	/^void igSortEvents(igEvents *es) {$/;"	f
+igTriangleData	include/IngoKdTreeInternal.h	/^} igTriangleData;$/;"	t	typeref:enum:__anon1
+next	include/event.h	/^	struct igEvent *next;$/;"	m	struct:igEvent	typeref:struct:igEvent::igEvent
+plane	include/IngoKdTree.h	/^		float plane;$/;"	m	union:igKdTree::__anon4
+plane	include/event.h	/^	float plane;$/;"	m	struct:igEvent
+plane	include/sahsplitcandidate.h	/^	float plane;$/;"	m	struct:__anon2
+tcnt	include/IngoKdTree.h	/^		unsigned tcnt;$/;"	m	union:igKdTree::__anon4
+terminate	include/sahsplitcandidate.h	/^	int terminate;$/;"	m	struct:__anon2
+trid	include/event.h	/^	unsigned trid;$/;"	m	struct:igEvent
+type	include/event.h	/^	Type type;$/;"	m	struct:igEvent

@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "IngoKdTree.h"
 #include "event.h"
 #include "aabb.h"
@@ -6,8 +7,6 @@
 #include "sahsplitcandidate.h"
 
 #include "IngoKdTreeInternal.h"
-
-
 
 igKdTree* igBuild(Triangle *t, const unsigned tcnt) {
 	igEvents *es = igCreateEvents(t, tcnt);
@@ -29,11 +28,12 @@ igKdTree* igCreateTree(Triangle *t, igTriangleData *igdt, AABB *aabb, igEvents *
 
 	if(split->terminate) {
 		node = igCreateLeaf(t, es);
+		igEventsFree(es);
 	} else {
 		igClassifyTriangles(t, igdt, es, split);
 
 		igEvents *esleft, *esright;
-		igSpliceEvents(t, igdt, &es, &esleft, &esright, aabb, split);
+		igSpliceEvents(t, igdt, &es, &esleft, &esright, aabb);
 
 		igEvents *nesleft, *nesright;
 		igGenerateNewEvents(t, igdt, &es, &nesleft, &nesright, aabb, split);
@@ -50,58 +50,108 @@ igKdTree* igCreateTree(Triangle *t, igTriangleData *igdt, AABB *aabb, igEvents *
 							igCreateTree(t, igdt, aabbleft, esleft), 
 							igCreateTree(t, igdt, aabbright, esright));
 	}
+
 	SAHSplitCandidateFree(split);
-	igEventsFree(es);
 	aabbFree(aabb);
 	return node;
 }
 
-SAHSplitCandidate* igFindSAHSplitCandidate(Triangle *t, AABB *aabb, igEvents *es) {
-	SAHSplitCandidate *split = initialSAHSplitCandidate();
-	const unsigned tcnt = igCountTriangles(es);
-
-	unsigned axis;
-	for(axis = 0; axis < 3; axis++) {
-		unsigned NL = 0, NP = 0, NR = tcnt;
-		igEvent *eit = *es[axis];
-		while(eit) {
-			float plane = eit->plane;
-			unsigned starts = 0, ends = 0, planars = 0;
-			while(eit && eit->plane == plane && eit->type == IGEND) {
-				ends++; eit = eit->next;
-			}
-			while(eit && eit->plane == plane && eit->type == IGPLANAR) {
-				planars++; eit = eit->next;
-			}
-			while(eit && eit->plane == plane && eit->type == IGBEGIN) {
-				starts++; eit = eit->next;
-			}
-			NP = planars;
-			NR -= ends + planars;
-			SAHSplitCandidate *left = newSAHSplitCandidate(axis, plane, NL + NP, NR);
-			SAHSplitCandidate *right = newSAHSplitCandidate(axis, plane, NR, NR + NP);
-			split = SAHChooseBetter(split, right);
-			split = SAHChooseBetter(split, left);
-		}
-	}
-	return split;
-}
 
 void igClassifyTriangles(Triangle *t, igTriangleData *igdt, igEvents *es, SAHSplitCandidate *split) {
 	unsigned axis;
 	for(axis = 0; axis < 3; axis++) {
-		igEvent *eit = *es[axis];
+		igEvent *eit = (*es)[axis];
 		while(eit) {
 			igdt[eit->trid] = IGBOTH;
 			eit = eit->next;
 		}
 	}
 	for(axis = 0; axis < 3; axis++) {
-		igEvent *eit = *es[axis];
+		igEvent *eit = (*es)[axis];
 		while(eit) {
 			if(eit->type == IGEND && eit->plane < split->plane) igdt[eit->trid] = IGLEFT_ONLY;
 			else if(eit->type == IGBEGIN && eit->plane > split->plane) igdt[eit->trid] = IGRIGHT_ONLY;
 			eit = eit->next;
 		}
 	}
+}
+
+igKdTree* igCreateInternalNode(SAHSplitCandidate *sahc, igKdTree *left, igKdTree *right) { 
+	igKdTree *node = malloc(sizeof(igKdTree));
+	node->plane = sahc->plane;
+	node->left = left;
+	node->right = right;
+	node->axis = sahc->axis;
+	node->tcnt = ~0u;
+	node->trids = NULL;
+	return node;
+}
+
+igKdTree* igCreateLeaf(Triangle *t, igEvents *es) {
+	igKdTree *leaf = malloc(sizeof(igKdTree));
+	leaf->axis = 3;
+	leaf->right = leaf->left = NULL;
+	leaf->plane = 0;
+	unsigned tcnt = leaf->tcnt = igCountTriangles(es);
+	leaf->trids = malloc(tcnt * sizeof(unsigned));
+	igEvent* eit;
+	for(eit = (*es)[0]; eit; eit = eit->next, tcnt--)
+		if(eit->type == IGBEGIN || eit->type == IGPLANAR)
+				leaf->trids[tcnt - 1] = eit->trid;
+	igEventsFree(es);
+	return leaf;
+}
+
+void igSpliceEvents(Triangle *t, igTriangleData *igdt, igEvents **es, igEvents **esleft, igEvents **esright, AABB *aabb) {
+	(*esright) = igInitEvents();
+	(*esleft) = igInitEvents();
+	igEvents *left = *esleft, *right = *esright;
+	unsigned axis;
+	for(axis = 0; axis < 3; axis++) {
+		igEvent *eit = (**es)[axis];
+		(**es)[axis] = NULL;
+		while(eit) {
+			switch(igdt[eit->trid]) {
+				case IGLEFT_ONLY: {
+					igEvent *tmp = eit->next;
+					(*left)[axis] = (*left)[axis]->next = eit;
+					eit = tmp;
+					break;
+				}
+				case IGRIGHT_ONLY: {
+					igEvent *tmp = eit->next;
+					(*right)[axis] = (*right)[axis]->next = eit;
+					eit = tmp;
+					break;
+				}
+				case IGBOTH: {
+					igEvent *tmp = eit->next;
+					(**es)[axis] = eit->next = (**es)[axis];
+					eit = tmp;
+				}
+			}
+		}
+	}
+}
+
+void igGenerateNewEvents(Triangle *t, igTriangleData* igdt, igEvents** es, igEvents **nesleft, igEvents **nesright, AABB *aabb, SAHSplitCandidate *sahc) {
+	igEvent *eit = (**es)[sahc->axis];
+	*nesleft = igInitEvents();
+	*nesright = igInitEvents();
+	while(eit) {
+		if(igdt[eit->trid] == IGBOTH && eit->type == IGBEGIN) {
+			AABB aabbs[2];
+			perfectsplit(aabb, &t[eit->trid], aabbs, sahc);
+			igCreateEvent(aabbs, *nesleft, eit->trid);
+			igCreateEvent(aabbs + 1, *nesright, eit->trid);
+		}
+	}
+}
+
+igTriangleData* igPrepareTriangleData(Triangle *t, unsigned tcnt) {
+	return malloc(tcnt * sizeof(igTriangleData));
+}
+
+void igTriangleDataFree(igTriangleData *igdt) {
+	free(igdt);
 }

@@ -2,6 +2,7 @@
 #define EVENT_HEADER
 
 #include "triangle.h"
+#include "aabb.h"
 
 typedef enum {
 	IGEND,
@@ -19,15 +20,14 @@ typedef struct igEvent {
 
 typedef igEvent* igEvents[3];
 
-
+igEvents* igInitEvents();
+void igCreateEvent(AABB*, igEvents*, unsigned);
 igEvents* igCreateEvents(Triangle *, unsigned);
+igEvents* igMergeEvents(igEvents*, igEvents*);
+int igEventCmp(const void *, const void*);
+unsigned igCountEvents(igEvent*);
+unsigned igCountTriangles(igEvents*);
 void igEventsFree(igEvents *);
 void igSortEvents(igEvents*);
-igEvents* igMergeEvents(igEvents*, igEvents*);
-unsigned igCountTriangles(igEvents*);
-unsigned igCountEvents(igEvent*);
-int igEventCmp(const void *, const void*);
-
-
 
 #endif

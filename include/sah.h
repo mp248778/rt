@@ -4,7 +4,9 @@
 #include "event.h"
 #include "aabb.h"
 #include "triangle.h"
+#include "sahsplitcandidate.h"
 
+float SAH(float, AABB*, unsigned, unsigned, unsigned *); 
 
 
 #endif

@@ -16,7 +16,7 @@ igKdTree* igKdTreeRoot();
 igKdTree* igCreateTree(Triangle *, igTriangleData *, AABB *, igEvents *);
 igKdTree* igCreateLeaf(Triangle*, igEvents*);
 void igClassifyTriangles(Triangle*, igTriangleData *, igEvents *, SAHSplitCandidate *);
-void igSpliceEvents(Triangle*, igTriangleData*, igEvents**, igEvents**, igEvents**, AABB*, SAHSplitCandidate*);
+void igSpliceEvents(Triangle*, igTriangleData*, igEvents**, igEvents**, igEvents**, AABB*);
 void igGenerateNewEvents(Triangle*, igTriangleData*, igEvents**, igEvents**, igEvents**, AABB*, SAHSplitCandidate*);
 igKdTree* igCreateInternalNode(SAHSplitCandidate*, igKdTree*, igKdTree*);
 
