@@ -20,6 +20,7 @@ typedef struct igEvent {
 
 typedef igEvent* igEvents[3];
 
+igEvent* igInitEvent(igEvent *, unsigned, float, Type t, unsigned);
 igEvents* igInitEvents();
 void igCreateEvent(AABB*, igEvents*, unsigned);
 igEvents* igCreateEvents(Triangle *, unsigned);

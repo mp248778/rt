@@ -1,7 +1,8 @@
 #include <stdlib.h>
 #include "sahsplitcandidate.h"
 #include "sah.h"
-#include "util.h"
+#include "utils.h"
+#include "printer.h"
 
 
 void SAHSplitCandidateFree(SAHSplitCandidate *sahc) {
@@ -30,26 +31,39 @@ SAHSplitCandidate* igFindSAHSplitCandidate(Triangle *t, AABB *aabb, igEvents *es
 			}
 			NP = planars;
 			NR -= ends + planars;
-			SAHSplitCandidate *left = newSAHSplitCandidate(axis, plane, aabb, NL + NP, NR);
-			SAHSplitCandidate *right = newSAHSplitCandidate(axis, plane, aabb, NR, NR + NP);
+			SAHSplitCandidate *left = newSAHSplitCandidate(axis, plane, aabb, NL + NP, NR, tcnt);
+			SAHSplitCandidate *right = newSAHSplitCandidate(axis, plane, aabb, NL, NR + NP, tcnt);
 			split = SAHChooseBetter(split, right);
 			split = SAHChooseBetter(split, left);
+			NL += starts + planars;
+//			printSAHSplitCandidate(split);
 		}
 	}
+	printSAHSplitCandidate(split);
+
 	return split;
 }
 
 SAHSplitCandidate* initialSAHSplitCandidate() {
 	SAHSplitCandidate *sahc = malloc(sizeof(SAHSplitCandidate));
 	sahc->axis = 4;
+	sahc->terminate = 1;	//if tcnt == 0
 	return sahc;
 }
 
-SAHSplitCandidate* newSAHSplitCandidate(unsigned axis, float plane, AABB *aabb, unsigned NL, unsigned NR) {
+SAHSplitCandidate* newSAHSplitCandidate(unsigned axis, float plane, AABB *aabb, unsigned NL, unsigned NR, unsigned tcnt) {
 	SAHSplitCandidate *sahc = malloc(sizeof(SAHSplitCandidate));
 	sahc->axis = axis;
 	sahc->plane = plane;
-	sahc->cost = SAH(plane, aabb, NL, NR, &sahc->terminate);
+	sahc->cost = SAH(plane, axis, aabb, NL, NR, &sahc->terminate);
+	if  (
+		((*aabb)[axis] >= plane || (*aabb)[axis + 3] <= plane)	||
+		(tcnt == 0) 											||
+		(sahc->cost < 0.1f * ((float)tcnt))
+		)
+			sahc->terminate = 1;
+	else sahc->terminate = 0;
+
 	return sahc;
 }
 
@@ -80,17 +94,16 @@ void calcNewPoints(float *A, float *B, float *p, float plane, unsigned axis) {
 
 void perfectsplit(AABB *aabb, Triangle *t, AABB aabbs[2], SAHSplitCandidate *sahc) {
 	unsigned axis = sahc->axis;
-	float *idx[3];
 	unsigned i;
 	float *A = *t, *B = *t + 3, *C = *t + 6;
-	if(A[axis] > B[axis]) swap(A,B);		//sort
-	if(B[axis] > C[axis]) swap(B,C);
-	if(A[axis] > B[axis]) swap(A,B);
-	if(B[axis] < sahc->plane) swap(A,C);	//leave A at one side, B and C at the other one
+	if(A[axis] > B[axis]) swap(&A,&B);		//sort
+	if(B[axis] > C[axis]) swap(&B,&C);
+	if(A[axis] > B[axis]) swap(&A,&B);
+	if(B[axis] < sahc->plane) swap(&A,&C);	//leave A at one side, B and C at the other one
 
 	float np[6];
-	calcNewPoints(A, B, np, sahc->plane, axis);
-	calcNewPoints(A, B, np + 3, sahc->plane, axis);
+	calcNewPoints(A, B, np, sahc->plane, axis);		//intersection points
+	calcNewPoints(A, C, np + 3, sahc->plane, axis);
 	for(i = 0; i < 3; i++) {
 		float minp = minv(3, A[i], np[i], np[i + 3]);
 		float maxp = maxv(3, A[i], np[i], np[i + 3]);

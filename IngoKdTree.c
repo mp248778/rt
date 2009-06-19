@@ -2,9 +2,9 @@
 #include "IngoKdTree.h"
 #include "event.h"
 #include "aabb.h"
-#include "triangle.h"
 #include "sah.h"
 #include "sahsplitcandidate.h"
+#include "printer.h"
 
 #include "IngoKdTreeInternal.h"
 
@@ -16,9 +16,6 @@ igKdTree* igBuild(Triangle *t, const unsigned tcnt) {
 	igKdTree *root = igCreateTree(t, igdt, aabb, es);
 
 	igTriangleDataFree(igdt);
-	aabbFree(aabb);
-	igEventsFree(es);
-
 	return root;
 }
 
@@ -26,9 +23,10 @@ igKdTree* igCreateTree(Triangle *t, igTriangleData *igdt, AABB *aabb, igEvents *
 	igKdTree *node;
 	SAHSplitCandidate *split = igFindSAHSplitCandidate(t, aabb, es);
 
+//	printSAHSplitCandidate(split);
+
 	if(split->terminate) {
 		node = igCreateLeaf(t, es);
-		igEventsFree(es);
 	} else {
 		igClassifyTriangles(t, igdt, es, split);
 
@@ -95,9 +93,11 @@ igKdTree* igCreateLeaf(Triangle *t, igEvents *es) {
 	unsigned tcnt = leaf->tcnt = igCountTriangles(es);
 	leaf->trids = malloc(tcnt * sizeof(unsigned));
 	igEvent* eit;
-	for(eit = (*es)[0]; eit; eit = eit->next, tcnt--)
-		if(eit->type == IGBEGIN || eit->type == IGPLANAR)
+	for(eit = (*es)[0]; eit; eit = eit->next)
+		if(eit->type == IGBEGIN || eit->type == IGPLANAR) {
 				leaf->trids[tcnt - 1] = eit->trid;
+				tcnt--;
+		}
 	igEventsFree(es);
 	return leaf;
 }
@@ -108,8 +108,8 @@ void igSpliceEvents(Triangle *t, igTriangleData *igdt, igEvents **es, igEvents *
 	igEvents *left = *esleft, *right = *esright;
 	unsigned axis;
 	for(axis = 0; axis < 3; axis++) {
-		igEvent *eit = (**es)[axis];
-		(**es)[axis] = NULL;
+		igEvent *eit = (**es)[axis] = malloc(sizeof(igEvent));
+		eit->next = NULL;
 		while(eit) {
 			switch(igdt[eit->trid]) {
 				case IGLEFT_ONLY: {
@@ -131,6 +131,9 @@ void igSpliceEvents(Triangle *t, igTriangleData *igdt, igEvents **es, igEvents *
 				}
 			}
 		}
+		eit = (**es)[axis]->next;
+		free((**es)[axis]);
+		(**es)[axis] = eit;
 	}
 }
 
@@ -138,6 +141,11 @@ void igGenerateNewEvents(Triangle *t, igTriangleData* igdt, igEvents** es, igEve
 	igEvent *eit = (**es)[sahc->axis];
 	*nesleft = igInitEvents();
 	*nesright = igInitEvents();
+	unsigned axis;
+	for(axis = 0; axis < 3; axis++) {
+		(*es)[axis] = malloc(sizeof(igEvent));
+		(*es)[axis]->next = NULL;
+	}
 	while(eit) {
 		if(igdt[eit->trid] == IGBOTH && eit->type == IGBEGIN) {
 			AABB aabbs[2];
@@ -145,6 +153,11 @@ void igGenerateNewEvents(Triangle *t, igTriangleData* igdt, igEvents** es, igEve
 			igCreateEvent(aabbs, *nesleft, eit->trid);
 			igCreateEvent(aabbs + 1, *nesright, eit->trid);
 		}
+	}
+	for(axis = 0; axis < 3; axis++) {
+		igEvent *eit = (*es)[axis]->next;
+		free((*es)[axis]);
+		(*es)[axis] = next;
 	}
 }
 

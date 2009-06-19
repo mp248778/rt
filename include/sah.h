@@ -6,7 +6,7 @@
 #include "triangle.h"
 #include "sahsplitcandidate.h"
 
-float SAH(float, AABB*, unsigned, unsigned, unsigned *); 
+float SAH(float, unsigned, AABB*, unsigned, unsigned, unsigned *); 
 
 
 #endif

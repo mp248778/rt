@@ -15,7 +15,7 @@ typedef struct {
 void SAHSplitCandidateFree(SAHSplitCandidate*);
 SAHSplitCandidate* igFindSAHSplitCandidate(Triangle*, AABB*, igEvents*);
 SAHSplitCandidate* initialSAHSplitCandidate();
-SAHSplitCandidate* newSAHSplitCandidate(unsigned, float, AABB*, unsigned, unsigned);
+SAHSplitCandidate* newSAHSplitCandidate(unsigned, float, AABB*, unsigned, unsigned, unsigned);
 SAHSplitCandidate* SAHChooseBetter(SAHSplitCandidate*, SAHSplitCandidate*);
 void perfectsplit(AABB*, Triangle*, AABB[2], SAHSplitCandidate*);
 

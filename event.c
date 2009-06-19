@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include "event.h"
-#include "util.h"
+#include "utils.h"
 
 igEvent* igInitEvent(igEvent *next, unsigned axis, float plane, Type t, unsigned trid) {
 	igEvent* e = malloc(sizeof(igEvent));
@@ -18,12 +18,11 @@ void igCreateEvent(AABB *aabb, igEvents *es, unsigned trid) {
 		float start = (*aabb)[axis];
 		float end = (*aabb)[axis + 3];
 		if(start == end) {
-			(*es)[axis] = (*es)[axis]->next = igInitEvent(NULL, axis, start, IGPLANAR, trid);
+			(*es)[axis]->next = igInitEvent((*es)[axis]->next, axis, start, IGPLANAR, trid);
 		} else {
-			igEvent *e1 = igInitEvent(NULL, axis, start, IGBEGIN, trid);
+			igEvent *e1 = igInitEvent((*es)[axis]->next, axis, start, IGBEGIN, trid);
 			igEvent *e2 = igInitEvent(e1, axis, end, IGEND, trid);
 			(*es)[axis]->next = e2;
-			(*es)[axis] = e1;
 		}
 	}
 }
@@ -39,8 +38,8 @@ igEvents* igCreateEvents(Triangle *t, unsigned tcnt) {
 	for(i = 0; i < tcnt; i++) {
 		AABB aabb;
 		for(axis = 0; axis < 3; axis++) {
-			float start = minv(3, t[tcnt][axis], t[tcnt][axis+3], t[tcnt][axis+6]);
-			float end = maxv(3, t[tcnt][axis], t[tcnt][axis+3], t[tcnt][axis+6]);
+			float start = minv(3, t[i][axis], t[i][axis+3], t[i][axis+6]);
+			float end = maxv(3, t[i][axis], t[i][axis+3], t[i][axis+6]);
 			aabb[axis] = start;
 			aabb[axis + 3] = end;
 		}
@@ -136,11 +135,12 @@ void igEventsFree(igEvents *es) {
 			free(prev);
 		}
 	}
+//	printf("%p\n", es);
 	free(es);
 }
 
 igEvents* igInitEvents() {
-	igEvents *es;
+	igEvents *es = malloc(sizeof(igEvents));
 	(*es)[0] = (*es)[1] = (*es)[2] = NULL;
 	return es;
 }
