@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "sahsplitcandidate.h"
 #include "sah.h"
 #include "utils.h"
@@ -11,15 +12,15 @@ void SAHSplitCandidateFree(SAHSplitCandidate *sahc) {
 
 SAHSplitCandidate* igFindSAHSplitCandidate(Triangle *t, AABB *aabb, igEvents *es) {
 	SAHSplitCandidate *split = initialSAHSplitCandidate();
-	const unsigned tcnt = igCountTriangles(es);
+	const uint32_t tcnt = igCountTriangles(es);
 
-	unsigned axis;
+	uint32_t axis;
 	for(axis = 0; axis < 3; axis++) {
-		unsigned NL = 0, NP = 0, NR = tcnt;
-		igEvent *eit = (*es)[axis];
+		uint32_t NL = 0, NP = 0, NR = tcnt;
+		igEvent *eit = (*es)[axis]->next;
 		while(eit) {
 			float plane = eit->plane;
-			unsigned starts = 0, ends = 0, planars = 0;
+			uint32_t starts = 0, ends = 0, planars = 0;
 			while(eit && eit->plane == plane && eit->type == IGEND) {
 				ends++; eit = eit->next;
 			}
@@ -35,12 +36,11 @@ SAHSplitCandidate* igFindSAHSplitCandidate(Triangle *t, AABB *aabb, igEvents *es
 			SAHSplitCandidate *right = newSAHSplitCandidate(axis, plane, aabb, NL, NR + NP, tcnt);
 			split = SAHChooseBetter(split, right);
 			split = SAHChooseBetter(split, left);
+
 			NL += starts + planars;
-//			printSAHSplitCandidate(split);
 		}
 	}
 	printSAHSplitCandidate(split);
-
 	return split;
 }
 
@@ -51,7 +51,7 @@ SAHSplitCandidate* initialSAHSplitCandidate() {
 	return sahc;
 }
 
-SAHSplitCandidate* newSAHSplitCandidate(unsigned axis, float plane, AABB *aabb, unsigned NL, unsigned NR, unsigned tcnt) {
+SAHSplitCandidate* newSAHSplitCandidate(uint32_t axis, float plane, AABB *aabb, uint32_t NL, uint32_t NR, uint32_t tcnt) {
 	SAHSplitCandidate *sahc = malloc(sizeof(SAHSplitCandidate));
 	sahc->axis = axis;
 	sahc->plane = plane;
@@ -59,10 +59,11 @@ SAHSplitCandidate* newSAHSplitCandidate(unsigned axis, float plane, AABB *aabb, 
 	if  (
 		((*aabb)[axis] >= plane || (*aabb)[axis + 3] <= plane)	||
 		(tcnt == 0) 											||
-		(sahc->cost < 0.1f * ((float)tcnt))
+		(sahc->cost < 0.001f * ((float)tcnt))
 		)
+	{
 			sahc->terminate = 1;
-	else sahc->terminate = 0;
+	}
 
 	return sahc;
 }
@@ -82,9 +83,9 @@ static void swap(float **a, float **b) {
 	*b = tmp;
 }
 
-void calcNewPoints(float *A, float *B, float *p, float plane, unsigned axis) {
+void calcNewPoints(float *A, float *B, float *p, float plane, uint32_t axis) {
 	float d = (A[axis] - plane)/(A[axis] - B[axis]);
-	unsigned i;
+	uint32_t i;
 	p[axis] = plane;
 	for(i = 0; i < 3; i++) {
 		if(i == axis) continue;
@@ -93,8 +94,8 @@ void calcNewPoints(float *A, float *B, float *p, float plane, unsigned axis) {
 }
 
 void perfectsplit(AABB *aabb, Triangle *t, AABB aabbs[2], SAHSplitCandidate *sahc) {
-	unsigned axis = sahc->axis;
-	unsigned i;
+	uint32_t axis = sahc->axis;
+	uint32_t i;
 	float *A = *t, *B = *t + 3, *C = *t + 6;
 	if(A[axis] > B[axis]) swap(&A,&B);		//sort
 	if(B[axis] > C[axis]) swap(&B,&C);

@@ -1,6 +1,7 @@
+#include <stdio.h>
 #include "sah.h"
 
-float SAH(float plane, unsigned axis, AABB *aabb, unsigned left, unsigned right, unsigned *terminate) {
+float SAH(float plane, uint32_t axis, AABB *aabb, uint32_t left, uint32_t right, uint32_t *terminate) {
 	AABB *aabbleft;
 	AABB *aabbright;
 	subdivideAABB(aabb, plane, axis, &aabbleft, &aabbright);
@@ -11,10 +12,7 @@ float SAH(float plane, unsigned axis, AABB *aabb, unsigned left, unsigned right,
 	aabbFree(aabbleft);
 	aabbFree(aabbright);
 
-//	printf("left=%i leftsurf=%f right=%i rightsurf=%f totalsurf=%f cost=%f\n", left, leftsurface, right, rightsurface, totalsurface,
-//		(left * leftsurface + right * rightsurface) / totalsurface);
-
+	*terminate = 0;
 
 	return (left * leftsurface + right * rightsurface) / totalsurface;
 }
-
